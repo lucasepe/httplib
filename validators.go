@@ -18,7 +18,7 @@ func CheckStatus(acceptStatuses ...int) HandleResponseFunc {
 		}
 
 		return fmt.Errorf("%w: unexpected status: %d",
-			StatusError{StatusCode: res.StatusCode}, res.StatusCode)
+			&StatusError{StatusCode: res.StatusCode}, res.StatusCode)
 	}
 }
 
@@ -34,19 +34,19 @@ func ErrorJSON(v error, acceptStatuses ...int) HandleResponseFunc {
 		}
 
 		if res.Body == nil {
-			return StatusError{StatusCode: res.StatusCode}
+			return &StatusError{StatusCode: res.StatusCode}
 		}
 
 		data, err := io.ReadAll(res.Body)
 		if err != nil {
-			return StatusError{StatusCode: res.StatusCode, Inner: err}
+			return &StatusError{StatusCode: res.StatusCode, Inner: err}
 		}
 
 		if err = json.Unmarshal(data, &v); err != nil {
-			return StatusError{StatusCode: res.StatusCode, Inner: err}
+			return &StatusError{StatusCode: res.StatusCode, Inner: err}
 		}
 
-		return StatusError{StatusCode: res.StatusCode, Inner: v}
+		return &StatusError{StatusCode: res.StatusCode, Inner: v}
 	}
 }
 
@@ -55,14 +55,14 @@ type StatusError struct {
 	Inner      error
 }
 
-func (e StatusError) Error() string {
+func (e *StatusError) Error() string {
 	if e.Inner != nil {
 		return fmt.Sprintf("unexpected status: %d: %v", e.StatusCode, e.Inner)
 	}
 	return fmt.Sprintf("unexpected status: %d:", e.StatusCode)
 }
 
-func (e StatusError) Unwrap() error {
+func (e *StatusError) Unwrap() error {
 	return e.Inner
 }
 
