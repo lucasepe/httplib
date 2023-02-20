@@ -6,9 +6,9 @@ import (
 	"github.com/lucasepe/httplib"
 )
 
-func ExampleUrlBuilder() {
+func ExampleNewURLBuilder() {
 	ub := httplib.NewURLBuilder(httplib.URLBuilderOptions{
-		BaseURL: "https://dev.azure.com",
+		BaseURL: "https://dev.my.site",
 		Path:    "my-great-org/projects",
 		Params: []string{
 			"api_version", "7.0",
@@ -22,5 +22,5 @@ func ExampleUrlBuilder() {
 	fmt.Print(url.String())
 
 	// Output:
-	// https://dev.azure.com/my-great-org/projects?api_version=7.0
+	// https://dev.my.site/my-great-org/projects?api_version=7.0
 }
