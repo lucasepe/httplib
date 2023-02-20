@@ -44,7 +44,6 @@ func InsecureSkipVerify(c *http.Client, v bool) {
 }
 
 type FireOptions struct {
-	Request         *http.Request
 	AuthMethod      AuthMethod
 	ResponseHandler HandleResponseFunc
 	Validators      []HandleResponseFunc
@@ -53,23 +52,23 @@ type FireOptions struct {
 
 // Fire calls the http.Client.Do() and validates and handles any resulting response.
 // The response body is closed after all validators and the handler run.
-func Fire(c *http.Client, opts FireOptions) (err error) {
+func Fire(c *http.Client, req *http.Request, opts FireOptions) (err error) {
 	if opts.AuthMethod != nil {
-		opts.AuthMethod.SetAuth(opts.Request)
+		opts.AuthMethod.SetAuth(req)
 	}
 
 	if opts.Verbose {
-		dumpRequest(opts.Request)
+		dumpRequest(req)
 	}
 
-	res, err := c.Do(opts.Request)
+	res, err := c.Do(req)
 	if err != nil {
 		return err
 	}
 	defer res.Body.Close()
 
 	if opts.Verbose {
-		dumpResponse(res, opts.Request.URL.Query().Get("watch") != "true")
+		dumpResponse(res, req.URL.Query().Get("watch") != "true")
 	}
 
 	if len(opts.Validators) == 0 {
