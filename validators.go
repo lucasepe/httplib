@@ -80,3 +80,7 @@ func HasStatusErr(err error, codes ...int) bool {
 	}
 	return false
 }
+
+func IsNotFoundError(err error) bool {
+	return HasStatusErr(err, http.StatusNotFound)
+}
