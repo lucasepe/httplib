@@ -2,24 +2,50 @@ package httplib
 
 import "net/url"
 
-func NewURL(baseURL, path string, kv ...string) (*url.URL, error) {
-	base, err := url.Parse(baseURL)
+type GetURLFunc func() (*url.URL, error)
+
+type URLBuilder interface {
+	Build() (*url.URL, error)
+}
+
+type URLBuilderOptions struct {
+	BaseURL string
+	Path    string
+	Params  []string
+}
+
+func NewURLBuilder(opts URLBuilderOptions) URLBuilder {
+	return &urlBuilder{
+		baseURL: opts.BaseURL,
+		path:    opts.Path,
+		params:  opts.Params,
+	}
+}
+
+type urlBuilder struct {
+	baseURL string
+	path    string
+	params  []string
+}
+
+func (ub *urlBuilder) Build() (*url.URL, error) {
+	base, err := url.Parse(ub.baseURL)
 	if err != nil {
 		return nil, err
 	}
 
-	uri := base.JoinPath(path)
+	uri := base.JoinPath(ub.path)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(kv)%2 != 0 {
+	if len(ub.params)%2 != 0 {
 		return uri, nil
 	}
 
 	q := uri.Query()
-	for i := 0; i < len(kv); i += 2 {
-		q.Add(kv[i], kv[i+1])
+	for i := 0; i < len(ub.params); i += 2 {
+		q.Add(ub.params[i], ub.params[i+1])
 	}
 	uri.RawQuery = q.Encode()
 

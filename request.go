@@ -8,43 +8,29 @@ import (
 	"os"
 )
 
-// AuthMethod is concrete implementation of common.AuthMethod for HTTP services
-type AuthMethod interface {
-	SetAuth(r *http.Request)
+func NewGetRequest(ub URLBuilder) (req *http.Request, err error) {
+	return newRequest(http.MethodGet, ub, nil)
 }
 
-// BasicAuth represent a HTTP basic auth
-type BasicAuth struct {
-	Username, Password string
+func NewPostRequest(ub URLBuilder, getBodyFn GetBodyFunc) (req *http.Request, err error) {
+	return newRequest(http.MethodPost, ub, getBodyFn)
 }
 
-func (a *BasicAuth) SetAuth(r *http.Request) {
-	if a == nil {
-		return
+func NewPutRequest(ub URLBuilder, getBodyFn GetBodyFunc) (req *http.Request, err error) {
+	return newRequest(http.MethodPut, ub, getBodyFn)
+}
+
+func NewDeleteRequest(ub URLBuilder) (req *http.Request, err error) {
+	return newRequest(http.MethodDelete, ub, nil)
+}
+
+// newRequest creates a new http.Request with specified method, uri and request body.
+func newRequest(method string, ub URLBuilder, getBodyFn GetBodyFunc) (req *http.Request, err error) {
+	url, err := ub.Build()
+	if err != nil {
+		return nil, err
 	}
 
-	r.SetBasicAuth(a.Username, a.Password)
-}
-
-// TokenAuth implements an http.AuthMethod that can be used with http transport
-// to authenticate with HTTP token authentication (also known as bearer
-// authentication).
-type TokenAuth struct {
-	Token string
-}
-
-func (a *TokenAuth) SetAuth(r *http.Request) {
-	if a == nil {
-		return
-	}
-	r.Header.Add("Authorization", fmt.Sprintf("Bearer %s", a.Token))
-}
-
-// GetBodyFunc provides a Builder with a source for a request body.
-type GetBodyFunc func() (io.ReadCloser, error)
-
-// NewRequest creates a new http.Request with specified method, uri and request body.
-func NewRequest(method, uri string, getBodyFn GetBodyFunc) (req *http.Request, err error) {
 	var body io.Reader
 	if getBodyFn != nil {
 		if body, err = getBodyFn(); err != nil {
@@ -55,7 +41,7 @@ func NewRequest(method, uri string, getBodyFn GetBodyFunc) (req *http.Request, e
 		}
 	}
 
-	req, err = http.NewRequest(method, uri, body)
+	req, err = http.NewRequest(method, url.String(), body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
@@ -63,18 +49,6 @@ func NewRequest(method, uri string, getBodyFn GetBodyFunc) (req *http.Request, e
 
 	return req, nil
 }
-
-// nopCloser is like io.NopCloser(),
-// but it is a concrete type so we can strip it out
-// before setting a body on a request.
-// See https://github.com/carlmjohnson/requests/discussions/49
-type nopCloser struct {
-	io.Reader
-}
-
-func (nopCloser) Close() error { return nil }
-
-var _ io.ReadCloser = nopCloser{}
 
 // dumpRequest dumps http.Request to os.Stderr.
 func dumpRequest(req *http.Request) {
