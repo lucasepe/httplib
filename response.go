@@ -2,10 +2,10 @@ package httplib
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httputil"
-	"os"
 )
 
 // HandleResponseFunc is used to validate or handle the response to a request.
@@ -40,21 +40,21 @@ func FromJSON(v any) HandleResponseFunc {
 	}
 }
 
+// DumpResponse dumps http.Response to the specified io.Writer.
+func DumpResponse(res *http.Response, wri io.Writer, body bool) {
+	buf, err := httputil.DumpResponse(res, body)
+	if err != nil {
+		fmt.Fprintf(wri, "error dumping *http.Response: %s\n", err.Error())
+		return
+	}
+	wri.Write(buf)
+	wri.Write([]byte{'\n'})
+}
+
 func consumeResponseBody(res *http.Response) (err error) {
 	const maxDiscardSize = 640 * 1 << 10
 	if _, err = io.CopyN(io.Discard, res.Body, maxDiscardSize); err == io.EOF {
 		err = nil
 	}
 	return err
-}
-
-// dumpResponse dumps http.Response to os.Stderr.
-func dumpResponse(res *http.Response, body bool) {
-	buf, err := httputil.DumpResponse(res, body)
-	if err != nil {
-		os.Stderr.WriteString("error dumping *http.Response")
-		return
-	}
-	os.Stderr.Write(buf)
-	os.Stderr.Write([]byte{'\n'})
 }

@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -43,6 +44,31 @@ func InsecureSkipVerify(c *http.Client, v bool) {
 	t.TLSClientConfig.InsecureSkipVerify = v
 }
 
+// HandleResponse composes the *http.Response validators with the handler.
+func HandleResponse(res *http.Response, handler HandleResponseFunc, validators ...HandleResponseFunc) (err error) {
+	if len(validators) == 0 {
+		validators = []HandleResponseFunc{
+			CheckStatus(
+				http.StatusOK,
+				http.StatusCreated,
+				http.StatusAccepted,
+				http.StatusNonAuthoritativeInfo,
+				http.StatusNoContent,
+			),
+		}
+	}
+	err = ChainHandlers(validators...)(res)
+	if err != nil {
+		return err
+	}
+
+	if handler == nil {
+		handler = consumeResponseBody
+	}
+
+	return handler(res)
+}
+
 type FireOptions struct {
 	AuthMethod      AuthMethod
 	ResponseHandler HandleResponseFunc
@@ -58,7 +84,7 @@ func Fire(c *http.Client, req *http.Request, opts FireOptions) (err error) {
 	}
 
 	if opts.Verbose {
-		dumpRequest(req)
+		DumpRequest(req, os.Stderr)
 	}
 
 	res, err := c.Do(req)
@@ -68,29 +94,8 @@ func Fire(c *http.Client, req *http.Request, opts FireOptions) (err error) {
 	defer res.Body.Close()
 
 	if opts.Verbose {
-		dumpResponse(res, req.URL.Query().Get("watch") != "true")
+		DumpResponse(res, os.Stderr, req.URL.Query().Get("watch") != "true")
 	}
 
-	if len(opts.Validators) == 0 {
-		opts.Validators = []HandleResponseFunc{
-			CheckStatus(
-				http.StatusOK,
-				http.StatusCreated,
-				http.StatusAccepted,
-				http.StatusNonAuthoritativeInfo,
-				http.StatusNoContent,
-			),
-		}
-	}
-	err = ChainHandlers(opts.Validators...)(res)
-	if err != nil {
-		return err
-	}
-
-	handle := opts.ResponseHandler
-	if handle == nil {
-		handle = consumeResponseBody
-	}
-
-	return handle(res)
+	return HandleResponse(res, opts.ResponseHandler, opts.Validators...)
 }

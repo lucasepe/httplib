@@ -6,12 +6,15 @@ import (
 	"github.com/lucasepe/httplib"
 )
 
-func ExampleNewGetRequest() {
-	ub := httplib.NewURLBuilder(httplib.URLBuilderOptions{
+func ExampleGet() {
+	url, err := httplib.NewURLBuilder(httplib.URLBuilderOptions{
 		BaseURL: "http://httpbin.org",
 		Path:    "user-agent",
-	})
-	req, err := httplib.NewGetRequest(ub)
+	}).Build()
+	if err != nil {
+		panic(err)
+	}
+	req, err := httplib.Get(url.String())
 	if err != nil {
 		panic(err)
 	}
@@ -30,23 +33,26 @@ func ExampleNewGetRequest() {
 	// httplib.Client Example
 }
 
-func ExampleNewPostRequest() {
+func ExamplePost() {
 	type Login struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
 
-	ub := httplib.NewURLBuilder(httplib.URLBuilderOptions{
+	url, err := httplib.NewURLBuilder(httplib.URLBuilderOptions{
 		BaseURL: "http://httpbin.org",
 		Path:    "post",
-	})
+	}).Build()
+	if err != nil {
+		panic(err)
+	}
 
 	bodyFn := httplib.ToJSON(&Login{
 		Username: "pinco.pallo@gmail.com",
 		Password: "abbracadabbra",
 	})
 
-	req, err := httplib.NewPostRequest(ub, bodyFn)
+	req, err := httplib.Post(url.String(), bodyFn)
 	if err != nil {
 		panic(err)
 	}

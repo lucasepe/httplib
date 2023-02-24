@@ -7,12 +7,15 @@ import (
 )
 
 func ExampleIsNotFoundError() {
-	ub := httplib.NewURLBuilder(httplib.URLBuilderOptions{
+	url, err := httplib.NewURLBuilder(httplib.URLBuilderOptions{
 		BaseURL: "http://example.com",
 		Path:    "404",
-	})
+	}).Build()
+	if err != nil {
+		panic(err)
+	}
 
-	req, err := httplib.NewGetRequest(ub)
+	req, err := httplib.Get(url.String())
 	if err != nil {
 		panic(err)
 	}
