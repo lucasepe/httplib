@@ -19,6 +19,10 @@ func Put(url string, getBodyFn GetBodyFunc) (req *http.Request, err error) {
 	return newRequest(http.MethodPut, url, getBodyFn)
 }
 
+func Patch(url string, getBodyFn GetBodyFunc) (req *http.Request, err error) {
+	return newRequest(http.MethodPatch, url, getBodyFn)
+}
+
 func Delete(url string) (req *http.Request, err error) {
 	return newRequest(http.MethodDelete, url, nil)
 }
