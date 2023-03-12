@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"net/url"
+	"strings"
 )
 
 // GetBodyFunc provides a Builder with a source for a request body.
@@ -17,6 +19,13 @@ func ToJSON(v any) GetBodyFunc {
 			return nil, err
 		}
 		return nopCloser{bytes.NewReader(b)}, nil
+	}
+}
+
+// FormData is a GetBodyFunc that builds an encoded form body.
+func FormData(data url.Values) GetBodyFunc {
+	return func() (r io.ReadCloser, err error) {
+		return nopCloser{strings.NewReader(data.Encode())}, nil
 	}
 }
 
